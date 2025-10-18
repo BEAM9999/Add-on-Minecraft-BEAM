@@ -6,6 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ดาวน์โหลด Add-on Minecraft</title>
   <style>
+    .modal-content.hide-anim {
+      animation: modalPopOut 0.25s cubic-bezier(.25,1.5,.5,1) 1;
+    }
+    @keyframes modalPopOut {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+    }
     body {
       background: #181818;
       color: #eee;
@@ -133,6 +146,26 @@
       color: #fff;
       box-shadow: 0 2px 16px #000a;
       position: relative;
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .modal-content.show-anim {
+      animation: modalPopIn 0.35s cubic-bezier(.25,1.5,.5,1) 1;
+    }
+    @keyframes modalPopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+      60% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
     .close-btn {
   position: sticky;
@@ -510,6 +543,10 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
         };
       });
       modal.style.display = 'flex';
+      // Animation: add class for pop-in
+      setTimeout(function() {
+        content.classList.add('show-anim');
+      }, 10);
       // History API: push state for modal
       if (!window._addonModalOpen) {
         window.history.pushState({modal:'detail'}, '', window.location.href);
@@ -517,7 +554,14 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       }
     }
     function closeDetailModal() {
-      document.getElementById('detailModal').style.display = 'none';
+      var modal = document.getElementById('detailModal');
+      var content = document.getElementById('modalContent');
+      content.classList.remove('show-anim');
+      content.classList.add('hide-anim');
+      setTimeout(function() {
+        modal.style.display = 'none';
+        content.classList.remove('hide-anim');
+      }, 250);
       if (window._addonModalOpen) {
         window._addonModalOpen = false;
         // Only go back if user pressed back, not programmatically
