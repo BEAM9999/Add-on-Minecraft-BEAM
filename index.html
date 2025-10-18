@@ -533,6 +533,11 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       // Animation: add class for pop-in
       setTimeout(function() {
         content.classList.add('show-anim');
+        // Remove animation class after animation ends to prevent touch/ripple bug
+        content.addEventListener('animationend', function handler() {
+          content.classList.remove('show-anim');
+          content.removeEventListener('animationend', handler);
+        });
       }, 10);
       // History API: push state for modal
       if (!window._addonModalOpen) {
