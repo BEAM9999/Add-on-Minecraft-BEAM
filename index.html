@@ -134,24 +134,41 @@
       box-shadow: 0 2px 16px #000a;
       position: relative;
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateY(0);
       transition: opacity 0.25s, transform 0.25s;
     }
     .modal-content.show-anim {
-      animation: modalPopIn 0.35s cubic-bezier(.25,1.5,.5,1) 1;
+      animation: modalPopInWin 0.38s cubic-bezier(.25,1.5,.5,1) 1;
     }
-    @keyframes modalPopIn {
+    .modal-content.hide-anim {
+      animation: modalMinimizeWin 0.32s cubic-bezier(.5,0,1,1) 1;
+    }
+    @keyframes modalPopInWin {
       0% {
         opacity: 0;
-        transform: scale(0.85);
+        transform: scale(0.7) translateY(120px);
       }
       60% {
         opacity: 1;
-        transform: scale(1.05);
+        transform: scale(1.05) translateY(-12px);
       }
       100% {
         opacity: 1;
-        transform: scale(1);
+        transform: scale(1) translateY(0);
+      }
+    }
+    @keyframes modalMinimizeWin {
+      0% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+      80% {
+        opacity: 0.7;
+        transform: scale(0.7) translateY(120px);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(180px);
       }
     }
     .close-btn {
@@ -532,12 +549,8 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       modal.style.display = 'flex';
       // Animation: add class for pop-in
       setTimeout(function() {
+        content.classList.remove('hide-anim');
         content.classList.add('show-anim');
-        // Remove animation class after animation ends to prevent touch/ripple bug
-        content.addEventListener('animationend', function handler() {
-          content.classList.remove('show-anim');
-          content.removeEventListener('animationend', handler);
-        });
       }, 10);
       // History API: push state for modal
       if (!window._addonModalOpen) {
@@ -546,9 +559,14 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       }
     }
     function closeDetailModal() {
-      document.getElementById('detailModal').style.display = 'none';
+      var modal = document.getElementById('detailModal');
       var content = document.getElementById('modalContent');
       content.classList.remove('show-anim');
+      content.classList.add('hide-anim');
+      setTimeout(function() {
+        modal.style.display = 'none';
+        content.classList.remove('hide-anim');
+      }, 300);
       if (window._addonModalOpen) {
         window._addonModalOpen = false;
         // Only go back if user pressed back, not programmatically
