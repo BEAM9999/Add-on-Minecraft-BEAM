@@ -6,19 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ดาวน์โหลด Add-on Minecraft</title>
   <style>
-    .modal-content.hide-anim {
-      animation: modalPopOut 0.25s cubic-bezier(.25,1.5,.5,1) 1;
-    }
-    @keyframes modalPopOut {
-      0% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: scale(0.85);
-      }
-    }
     body {
       background: #181818;
       color: #eee;
@@ -151,7 +138,7 @@
       transition: opacity 0.25s, transform 0.25s;
     }
     .modal-content.show-anim {
-      animation: modalPopIn 0.35s cubic-bezier(.25,1.5,.5,1) 1;
+      animation: modalPopIn 0.7s cubic-bezier(.25,1.5,.5,1) 1;
     }
     @keyframes modalPopIn {
       0% {
@@ -554,14 +541,9 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       }
     }
     function closeDetailModal() {
-      var modal = document.getElementById('detailModal');
+      document.getElementById('detailModal').style.display = 'none';
       var content = document.getElementById('modalContent');
       content.classList.remove('show-anim');
-      content.classList.add('hide-anim');
-      setTimeout(function() {
-        modal.style.display = 'none';
-        content.classList.remove('hide-anim');
-      }, 250);
       if (window._addonModalOpen) {
         window._addonModalOpen = false;
         // Only go back if user pressed back, not programmatically
