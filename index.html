@@ -647,13 +647,15 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
               fullscreenModal.appendChild(bigImg);
               // ปิด modal เมื่อคลิกพื้นที่ว่างหรือกด Back
               function closeFullscreen() {
-                document.body.removeChild(fullscreenModal);
-                window.removeEventListener('popstate', closeFullscreen);
+                if (document.body.contains(fullscreenModal)) {
+                  document.body.removeChild(fullscreenModal);
+                  window.removeEventListener('popstate', closeFullscreen);
+                }
               }
               fullscreenModal.onclick = function(e) {
                 if (e.target === fullscreenModal) closeFullscreen();
               };
-              // รองรับปุ่ม Back (history)
+              // รองรับปุ่ม Back (history) ซ้อน state
               window.history.pushState({imgFullscreen:true}, '', window.location.href);
               window.addEventListener('popstate', closeFullscreen);
               document.body.appendChild(fullscreenModal);
@@ -780,8 +782,15 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       if (window._addonModalOpen) {
         window._addonModalOpen = false;
         // Only go back if user pressed back, not programmatically
+        // ปิดเฉพาะ detail modal ถ้าไม่มี imgFullscreen modal ค้างอยู่
         if (window.history.state && window.history.state.modal === 'detail') {
-          window.history.back();
+          // ถ้า state ก่อนหน้าเป็น imgFullscreen ให้ back 2 ครั้ง
+          if (window.history.state && window.history.state.imgFullscreen) {
+            window.history.back();
+            setTimeout(function(){ window.history.back(); }, 10);
+          } else {
+            window.history.back();
+          }
         }
       }
     }
