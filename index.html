@@ -801,6 +801,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- Modal YouTube เด้งจากตำแหน่งปุ่มไอคอน ---
 let ytModalOpen = false;
 function openYtModal() {
+  // History API: push state สำหรับ modal YouTube
+  if (!window._ytModalOpen) {
+    window.history.pushState({modal:'yt'}, '', window.location.href);
+    window._ytModalOpen = true;
+  }
   if (ytModalOpen) return; // ป้องกันซ้อน
   ytModalOpen = true;
   const modal = document.getElementById('ytModal');
@@ -827,6 +832,19 @@ function openYtModal() {
   }, 10);
 }
 function closeYtModal() {
+  if (window._ytModalOpen) {
+    window._ytModalOpen = false;
+    // Only go back if user pressed back, not programmatically
+    if (window.history.state && window.history.state.modal === 'yt') {
+      window.history.back();
+    }
+  }
+// รองรับปุ่ม back (popstate) สำหรับ modal YouTube
+window.addEventListener('popstate', function(e) {
+  if (ytModalOpen) {
+    closeYtModal();
+  }
+});
   if (!ytModalOpen) return;
   ytModalOpen = false;
   const modal = document.getElementById('ytModal');
