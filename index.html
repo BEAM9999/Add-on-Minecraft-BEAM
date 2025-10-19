@@ -143,6 +143,55 @@
     .modal-content.hide-anim {
       animation: modalMinimizeWin 0.32s cubic-bezier(.5,0,1,1) 1;
     }
+      /* อนิเมชั่นเด้ง modal รายละเอียด Add-on จากปุ่มที่กด */
+      .modal-content.detail-show-anim {
+        animation: detailModalPopIn 0.38s cubic-bezier(.25,1.5,.5,1) 1;
+      }
+      @keyframes detailModalPopIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.7) translate(var(--detail-x,0), var(--detail-y,0));
+        }
+        60% {
+          opacity: 1;
+          transform: scale(1.05) translate(0, -12px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0);
+        }
+      }
+      /* อนิเมชั่นเด้ง modal จากตำแหน่งปุ่มไอคอน */
+      .modal-content.yt-show-anim {
+        animation: ytModalPopIn 0.38s cubic-bezier(.25,1.5,.5,1) 1;
+      }
+      .modal-content.yt-hide-anim {
+        animation: ytModalMinimize 0.32s cubic-bezier(.5,0,1,1) 1;
+      }
+      @keyframes ytModalPopIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.7) translate(var(--yt-x,0), var(--yt-y,0));
+        }
+        60% {
+          opacity: 1;
+          transform: scale(1.05) translate(0, -12px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0);
+        }
+      }
+      @keyframes ytModalMinimize {
+        0% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1) translate(0, 0);
+        }
+      }
     @keyframes modalPopInWin {
       0% {
         opacity: 0;
@@ -546,11 +595,26 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
           }
         };
       });
+      // --- อนิเมชั่นเด้ง modal จากปุ่มที่กด ---
+      // หาตำแหน่งปุ่มที่กด (addon-card)
+      const cards = document.querySelectorAll('.addon-card');
+      let cardRect = null;
+      if (cards[idx]) cardRect = cards[idx].getBoundingClientRect();
+      const centerX = window.innerWidth/2;
+      const centerY = window.innerHeight/2;
+      let cardX = centerX, cardY = centerY;
+      if (cardRect) {
+        cardX = cardRect.left + cardRect.width/2;
+        cardY = cardRect.top + cardRect.height/2;
+      }
+      const dx = cardX - centerX;
+      const dy = cardY - centerY;
+      content.style.setProperty('--detail-x', dx+'px');
+      content.style.setProperty('--detail-y', dy+'px');
       modal.style.display = 'flex';
-      // Animation: add class for pop-in
       setTimeout(function() {
         content.classList.remove('hide-anim');
-        content.classList.add('show-anim');
+        content.classList.add('detail-show-anim');
       }, 10);
       // History API: push state for modal
       if (!window._addonModalOpen) {
@@ -561,7 +625,7 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
     function closeDetailModal() {
       var modal = document.getElementById('detailModal');
       var content = document.getElementById('modalContent');
-      content.classList.remove('show-anim');
+      content.classList.remove('detail-show-anim');
       content.classList.add('hide-anim');
       setTimeout(function() {
         modal.style.display = 'none';
@@ -730,13 +794,60 @@ window.onload = function() {
 document.addEventListener('DOMContentLoaded', function() {
   var siteLogo = document.getElementById('siteLogo');
   if (siteLogo) {
-    siteLogo.onclick = function() {
-      document.getElementById('ytModal').style.display = 'flex';
-    };
+    siteLogo.onclick = openYtModal;
   }
 });
+
+// --- Modal YouTube เด้งจากตำแหน่งปุ่มไอคอน ---
+let ytModalOpen = false;
+function openYtModal() {
+  if (ytModalOpen) return; // ป้องกันซ้อน
+  ytModalOpen = true;
+  const modal = document.getElementById('ytModal');
+  const content = modal.querySelector('.modal-content');
+  // คำนวณตำแหน่งปุ่มไอคอน
+  const logo = document.getElementById('siteLogo');
+  const rect = logo.getBoundingClientRect();
+  // คำนวณ offset จากกลางหน้าจอ (modal-content จะอยู่กลางจอ)
+  const centerX = window.innerWidth/2;
+  const centerY = window.innerHeight/2;
+  const iconX = rect.left + rect.width/2;
+  const iconY = rect.top + rect.height/2;
+  const dx = iconX - centerX;
+  const dy = iconY - centerY;
+  // set custom property
+  content.style.setProperty('--yt-x', dx+'px');
+  content.style.setProperty('--yt-y', dy+'px');
+  // reset hide anim
+  content.classList.remove('yt-hide-anim');
+  // show modal
+  modal.style.display = 'flex';
+  setTimeout(function() {
+    content.classList.add('yt-show-anim');
+  }, 10);
+}
 function closeYtModal() {
-  document.getElementById('ytModal').style.display = 'none';
+  if (!ytModalOpen) return;
+  ytModalOpen = false;
+  const modal = document.getElementById('ytModal');
+  const content = modal.querySelector('.modal-content');
+  // คำนวณตำแหน่งปุ่มไอคอนอีกครั้ง (เผื่อ resize)
+  const logo = document.getElementById('siteLogo');
+  const rect = logo.getBoundingClientRect();
+  const centerX = window.innerWidth/2;
+  const centerY = window.innerHeight/2;
+  const iconX = rect.left + rect.width/2;
+  const iconY = rect.top + rect.height/2;
+  const dx = iconX - centerX;
+  const dy = iconY - centerY;
+  content.style.setProperty('--yt-x', dx+'px');
+  content.style.setProperty('--yt-y', dy+'px');
+  content.classList.remove('yt-show-anim');
+  content.classList.add('yt-hide-anim');
+  setTimeout(function() {
+    modal.style.display = 'none';
+    content.classList.remove('yt-hide-anim');
+  }, 320);
 }
 </script>
 </body>
