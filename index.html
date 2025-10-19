@@ -296,6 +296,14 @@
   </style>
 </head>
 <body>
+  <!-- Modal แจ้งเตือนทรัพย์สินทางปัญญา -->
+  <div class="modal" id="ipModal" style="display:none;z-index:2000;">
+    <div class="modal-content" style="min-width:320px;max-width:95vw;text-align:center;">
+      <div style="font-size:1.2em;font-weight:bold;color:#ffb300;margin-bottom:18px;">กรุณาเคารพทรัพย์สินทางปัญญาของผู้อื่น</div>
+      <div style="color:#fff;margin-bottom:18px;">ห้ามคัดลอกหรือดูดข้อมูลจากเว็บไซต์นี้โดยไม่ได้รับอนุญาต</div>
+      <button onclick="closeIpModal()" style="background:#ffb300;color:#222;border:none;border-radius:6px;padding:8px 32px;font-size:1.1em;font-weight:bold;cursor:pointer;">รับทราบ</button>
+    </div>
+  </div>
   <header style="display:flex;align-items:center;justify-content:center;gap:18px;">
     <img id="siteLogo" src="https://yt3.googleusercontent.com/ZlpQ7tdER2Gs-vWQ4OfRQaVCxaB1cakpwc4ZyX_p3fJtqsWJ-_HdZd6D9sk3W_RdsaOzZQ67xMA=s72-c-k-c0x00ffffff-no-rj" alt="โลโก้เว็บไซต์" style="width:48px;height:48px;border-radius:50px;object-fit:cover;cursor:pointer;">
     <span style="position:relative; top:-5px;">Add-on Minecraft</span>
@@ -383,6 +391,44 @@
   </div>
 
   <script>
+// ป้องกันการเปิด DevTools และแจ้งเตือนทรัพย์สินทางปัญญา
+function showIpModal() {
+  document.getElementById('ipModal').style.display = 'flex';
+}
+function closeIpModal() {
+  document.getElementById('ipModal').style.display = 'none';
+}
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
+document.addEventListener('keydown', function(e) {
+  // F12
+  if (e.key === 'F12') {
+    e.preventDefault();
+    showIpModal();
+    return false;
+  }
+  // Ctrl+Shift+I หรือ Ctrl+Shift+J
+  if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+      (e.ctrlKey && e.key === 'U')) {
+    e.preventDefault();
+    showIpModal();
+    return false;
+  }
+});
+// ตรวจจับ DevTools ถูกเปิด (แบบง่าย)
+let devtoolsOpen = false;
+setInterval(function() {
+  const threshold = 160;
+  if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+    if (!devtoolsOpen) {
+      devtoolsOpen = true;
+      showIpModal();
+    }
+  } else {
+    devtoolsOpen = false;
+  }
+}, 1000);
 
 let addons = [
   {
