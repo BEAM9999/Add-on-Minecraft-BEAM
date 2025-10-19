@@ -563,6 +563,8 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
 };
 
     function openDetailModal(idx) {
+  // ป้องกันการปิด detail modal เมื่อปิด img fullscreen ด้วย Back
+  window._imgFullscreenOpen = false;
       const addon = addons[idx];
       const modal = document.getElementById('detailModal');
       const content = document.getElementById('modalContent');
@@ -656,8 +658,15 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
                 if (e.target === fullscreenModal) closeFullscreen();
               };
               // รองรับปุ่ม Back (history) ซ้อน state
+              window._imgFullscreenOpen = true;
               window.history.pushState({imgFullscreen:true}, '', window.location.href);
-              window.addEventListener('popstate', closeFullscreen);
+              window.addEventListener('popstate', function handler(e) {
+                if (window._imgFullscreenOpen) {
+                  closeFullscreen();
+                  window._imgFullscreenOpen = false;
+                  window.removeEventListener('popstate', handler);
+                }
+              });
               document.body.appendChild(fullscreenModal);
             };
             const hideBtn = document.createElement('button');
@@ -796,6 +805,11 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
     }
     // Listen for back button to close modal
     window.addEventListener('popstate', function(e) {
+      // ถ้าอยู่ใน imgFullscreen state ให้ปิดเฉพาะ modal รูปภาพ ไม่ปิด detail modal
+      if (window._imgFullscreenOpen && window.history.state && window.history.state.imgFullscreen) {
+        // modal รูปภาพจะถูกปิดโดย handler ใน img.onclick
+        return;
+      }
       if (window._addonModalOpen) {
         closeDetailModal();
       }
