@@ -478,7 +478,7 @@ let isAdmin = false;
         document.getElementById('codeImportBtn').style.display = 'inline-block';
         renderAddons(addons);
         return;
-      }
+      }ห
       const filtered = addons.filter(a => {
         // ค้นหาจากชื่อ Add-on, เวอร์ชั่น หรือคำอธิบาย (รองรับแบบไม่เว้นวรรคและตรวจจับข้อความในคำอธิบายละเอียดขึ้น)
         const title = (a.title || '').toLowerCase();
@@ -583,8 +583,32 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
         .replace(/\r\n|\r|\n/g, '<br>');
       html += `<div class='addon-desc' id='addonDescArea'>${descHtml}</div>`;
       html += `<div class='addon-versions'>`;
+      // ฟังก์ชันแปลงลิงก์ Google Drive เป็น direct download
+      function convertDriveDownloadUrl(url) {
+        // ถ้าเป็นลิงก์ Google Drive แบบ file/d/ID/view หรือ open?id=ID
+        let match = url.match(/https?:\/\/drive\.google\.com\/file\/d\/([\w-]+)\/view/);
+        if (match) {
+          return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        }
+        match = url.match(/https?:\/\/drive\.google\.com\/open\?id=([\w-]+)/);
+        if (match) {
+          return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        }
+        // ถ้าเป็นลิงก์ Google Drive แบบ sharing (uc?id=ID)
+        match = url.match(/https?:\/\/drive\.google\.com\/uc\?id=([\w-]+)/);
+        if (match) {
+          return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        }
+        // ถ้าเป็นลิงก์ Google Drive แบบ usercontent (ดาวน์โหลดตรงอยู่แล้ว)
+        if (/https?:\/\/drive\.usercontent\.google\.com\//.test(url)) {
+          return url;
+        }
+        // ไม่ใช่ Google Drive
+        return url;
+      }
       addon.versions.forEach(ver => {
-        html += `<button class='version-btn' onclick="window.open('${ver.link}','_blank')">ดาวน์โหลดเวอร์ชั่น ${ver.name}</button>`;
+        const dlLink = convertDriveDownloadUrl(ver.link||'');
+        html += `<button class='version-btn' onclick="window.open('${dlLink}','_blank')">ดาวน์โหลดเวอร์ชั่น ${ver.name}</button>`;
       });
       html += `</div>`;
       content.innerHTML = html;
