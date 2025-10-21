@@ -445,6 +445,32 @@ let addons = [
 ];
 let isAdmin = false;
 
+const imageCache = new Map();
+
+function preloadImage(url) {
+  if (!url) return null;
+  if (imageCache.has(url)) return imageCache.get(url);
+  const promise = new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
+  imageCache.set(url, promise);
+  return promise;
+}
+
+function collectImageUrls(text) {
+  if (!text) return [];
+  const pattern = /(https?:\/\/(?:[^\s"'\n\r]+?\.(?:png|jpg|jpeg|gif|webp|bmp|svg)(?:\?[^\s"'\n\r]*)?))/gi;
+  const found = new Set();
+  text.replace(pattern, match => {
+    found.add(match);
+    return match;
+  });
+  return Array.from(found);
+}
+
 
     function renderAddons(list) {
       const addonList = document.getElementById('addonList');
@@ -585,6 +611,7 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
 
     function openDetailModal(idx) {
       const addon = addons[idx];
+      collectImageUrls(addon.desc || '').forEach(preloadImage);
       const modal = document.getElementById('detailModal');
       const content = document.getElementById('modalContent');
       let html = `<button class='close-btn' onclick='closeDetailModal()'>×</button>`;
@@ -596,9 +623,9 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
         .replace(/(https?:\/\/(?:[^\s"'\n\r]+?\.(?:png|jpg|jpeg|gif|webp|bmp|svg)(?:\?[^\s"'\n\r]*)?))/gi, function(url) {
           return `<button class=\"desc-img-btn\" data-img-url=\"${url}\" style=\"background:#444;color:#00c853;border:none;border-radius:6px;padding:2px 12px;margin:4px 0;cursor:pointer;\">แสดงรูปภาพ</button>`;
         })
-        // ฝังคลิป YouTube อัตโนมัติ
+        // ฝังคลิป YouTube ทันทีเพื่อให้ผู้ใช้เห็นว่าเป็นวิดีโอ
         .replace(/(https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11}))/gi, function(url, full, vid) {
-          return `<div class=\"desc-yt-container\" style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0;\"><iframe src=\"https://www.youtube.com/embed/${vid}\" width=\"400\" height=\"225\" style=\"max-width:100%;border-radius:8px;box-shadow:0 2px 8px #0006;\" allowfullscreen frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\"></iframe></div>`;
+          return `<div class=\"desc-yt-container\" style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;margin:8px 0;\"><iframe src=\"https://www.youtube.com/embed/${vid}\" width=\"400\" height=\"225\" style=\"max-width:100%;border-radius:8px;box-shadow:0 2px 8px #0006;\" allowfullscreen frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" loading=\"lazy\"></iframe></div>`;
         })
         .replace(/\\n/g, '<br>')
         .replace(/\r\n|\r|\n/g, '<br>');
@@ -615,14 +642,22 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
       // รูปภาพ
       descArea.querySelectorAll('.desc-img-btn').forEach(btn => {
         btn.onclick = function() {
+          const url = btn.getAttribute('data-img-url');
+          if (!url) return;
           if (btn.dataset.shown === '1') {
-            if (btn.nextSibling && btn.nextSibling.className === 'desc-img-container') {
-              btn.nextSibling.remove();
-            }
-            btn.innerHTML = 'แสดงรูปภาพ';
+            const container = btn._imgContainer;
+            if (container && container.parentNode) container.parentNode.removeChild(container);
+            btn._imgContainer = null;
             btn.dataset.shown = '';
             btn.style.display = '';
-          } else {
+            btn.textContent = 'แสดงรูปภาพ';
+            btn.disabled = false;
+            return;
+          }
+          btn.textContent = 'กำลังโหลด...';
+          btn.disabled = true;
+          const insertImage = () => {
+            if (btn.dataset.shown === '1') return;
             const container = document.createElement('div');
             container.className = 'desc-img-container';
             container.style.display = 'flex';
@@ -631,7 +666,9 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
             container.style.justifyContent = 'center';
             container.style.margin = '8px 0';
             const img = document.createElement('img');
-            img.src = btn.getAttribute('data-img-url');
+            img.src = url;
+            img.loading = 'lazy';
+            img.decoding = 'async';
             img.style.maxWidth = '400px';
             img.style.width = '100%';
             img.style.height = 'auto';
@@ -639,11 +676,9 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
             img.style.borderRadius = '8px';
             img.style.boxShadow = '0 2px 8px #0006';
             img.className = 'desc-img-preview';
-            // ฟีเจอร์ขยายรูปภาพเต็มหน้าจอ
             img.style.cursor = 'zoom-in';
             img.onclick = function(e) {
               e.stopPropagation();
-              // สร้าง modal เต็มจอ
               const fullscreenModal = document.createElement('div');
               fullscreenModal.className = 'img-fullscreen-modal';
               fullscreenModal.style.position = 'fixed';
@@ -657,7 +692,6 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
               fullscreenModal.style.justifyContent = 'center';
               fullscreenModal.style.zIndex = '99999';
               fullscreenModal.style.cursor = 'zoom-out';
-              // รูปภาพใหญ่
               const bigImg = document.createElement('img');
               bigImg.src = img.src;
               bigImg.style.maxWidth = '96vw';
@@ -667,12 +701,11 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
               bigImg.style.background = '#222';
               bigImg.style.cursor = 'zoom-out';
               fullscreenModal.appendChild(bigImg);
-              // ปิด modal เมื่อคลิกพื้นที่ว่างเท่านั้น (ไม่รองรับปุ่ม Back)
               function closeFullscreen() {
                 document.body.removeChild(fullscreenModal);
               }
-              fullscreenModal.onclick = function(e) {
-                if (e.target === fullscreenModal) closeFullscreen();
+              fullscreenModal.onclick = function(ev) {
+                if (ev.target === fullscreenModal) closeFullscreen();
               };
               document.body.appendChild(fullscreenModal);
             };
@@ -689,20 +722,30 @@ document.getElementById('codeImportForm').onsubmit = function(e) {
             hideBtn.style.fontSize = '1em';
             hideBtn.onclick = function() {
               container.remove();
-              btn.innerHTML = 'แสดงรูปภาพ';
+              btn._imgContainer = null;
               btn.dataset.shown = '';
               btn.style.display = '';
+              btn.textContent = 'แสดงรูปภาพ';
+              btn.disabled = false;
             };
             container.appendChild(img);
             container.appendChild(hideBtn);
             btn.parentNode.insertBefore(container, btn.nextSibling);
-            btn.innerHTML = '';
+            btn._imgContainer = container;
             btn.dataset.shown = '1';
             btn.style.display = 'none';
+            btn.textContent = 'แสดงรูปภาพ';
+            btn.disabled = false;
+          };
+          const preload = preloadImage(url);
+          if (preload && typeof preload.then === 'function') {
+            preload.then(() => insertImage());
+          } else {
+            insertImage();
           }
         };
       });
-      // ...ลบฟีเจอร์ปุ่มแสดง/ซ่อนคลิป YouTube...
+      // วิดีโอ YouTube แสดงทันที ไม่ต้องผูกปุ่มเพิ่มเติม
       // --- อนิเมชั่นเด้ง modal จากปุ่มที่กด ---
       // หาตำแหน่งปุ่มที่กด (addon-card)
       const cards = document.querySelectorAll('.addon-card');
